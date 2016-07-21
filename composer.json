@@ -9,7 +9,7 @@
   "autoload": {
     "psr-0": {
       "Sinclair\\ApiFoundation": "src/"
-    },
+    }
   },
   "license": "MIT",
   "authors": [
