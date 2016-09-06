@@ -9,11 +9,11 @@ class ApiFoundationServiceProvider extends ServiceProvider
 {
     public function boot()
     {
-
+        $this->app->register(FractalServiceProvider::class);
     }
 
     public function register()
     {
-        $this->app->register(FractalServiceProvider::class);
+
     }
 }

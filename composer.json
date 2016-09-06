@@ -4,7 +4,11 @@
   "type": "library",
   "require": {
     "sinclair/repository": "1.*",
-    "spatie/laravel-fractal": "^1.9"
+    "spatie/laravel-fractal": "^1.9",
+    "phpunit/phpunit": "~4.0",
+    "phpspec/phpspec": "~2.1",
+    "laracasts/testdummy": "~2.0",
+    "laravel/laravel": "dev-develop"
   },
   "autoload": {
     "psr-0": {
@@ -18,5 +22,18 @@
       "email": "tom.sinclair31@gmail.com"
     }
   ],
-  "minimum-stability": "dev"
+  "minimum-stability": "dev",
+  "scripts": {
+    "phpunit": "./vendor/bin/phpunit;"
+  },
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "http://satis.wtbidev.co.uk"
+    }
+  ],
+  "config": {
+    "preferred-install": "dist",
+    "secure-http": false
+  }
 }

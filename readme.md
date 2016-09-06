@@ -1,6 +1,6 @@
 #API Foundation
 
-A simple trait to build RESTful controllers from, using Fractal. 
+A simple trait to build RESTful controllers using Fractal. 
 
 ###Installation
 
@@ -72,7 +72,7 @@ But you are free to use your own authorisation driver.
  
 I strongly recommend setting up an API route group such as:
 ```
-Route::group(['middleware' => 'api', 'namespace' => 'Api', 'prefix' => 'api/v1'], function()
+Route::group(['middleware' => 'api', 'namespace' => 'Api'], function()
 {
     Route::get('api/v1/user/{user}/restore', [
         'as'   => 'api.v1.user.restore',
@@ -84,11 +84,11 @@ Route::group(['middleware' => 'api', 'namespace' => 'Api', 'prefix' => 'api/v1']
         'uses' => 'UserController@filter'
     ]);
     
-    Route::resource('user', 'UserController', ['except' => ['create', 'edit']]);
+    Route::resource('/api/v1/user', 'UserController', ['except' => ['create', 'edit']]);
 }):
 ```
 
-Use form requests for each resource so you're validation is abstracted away from the controller as well.
+Use form requests for each resource so you're validation is abstracted away from the controller as well. I'd expect you to over write the `store` and `update` methods, so you can inject your form requests.
 
 Finally, let's use Route Model Binding, here's a quick script I use for this in `App\Providers\RouteServiceProvider`:
 ```
