@@ -248,7 +248,7 @@ trait ApiFoundation
 
     protected function parseIncludes()
     {
-        return (new Manager)->parseIncludes(request()->get('includes'))->getRequestedIncludes();
+        return (new Manager)->parseIncludes(request('includes', []))->getRequestedIncludes();
     }
 
     /**
@@ -256,7 +256,8 @@ trait ApiFoundation
      */
     protected function eagerLoadIncludesForItem(&$item)
     {
-        $item->load($this->parseIncludes());
+        if ($item instanceof Model)
+            $item->load($this->parseIncludes());
     }
 
     /**
@@ -264,7 +265,7 @@ trait ApiFoundation
      */
     protected function eagerLoadIncludesForCollection(&$rows)
     {
-        $rows = $rows->each(function ($item)
+        $rows->each(function (&$item)
         {
             $this->eagerLoadIncludesForItem($item);
         });
