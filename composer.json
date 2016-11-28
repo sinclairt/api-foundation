@@ -31,7 +31,7 @@
   "repositories": [
     {
       "type": "composer",
-      "url": "http://satis.wtbidev.co.uk"
+      "url": "http://satis.dev"
     }
   ],
   "config": {

@@ -2,6 +2,7 @@
 
 namespace Sinclair\ApiFoundation\Traits;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use League\Fractal\Pagination\IlluminatePaginatorAdapter;
@@ -9,6 +10,7 @@ use League\Fractal\Serializer\JsonApiSerializer;
 use League\Fractal\TransformerAbstract;
 use Sinclair\ApiFoundation\Transformers\DefaultTransformer;
 use Sinclair\Repository\Contracts\Repository;
+use League\Fractal\Manager;
 
 /**
  * Class ApiFoundation
@@ -33,11 +35,11 @@ trait ApiFoundation
     /**
      * ApiFoundation constructor.
      *
-     * @param Repository $repository
+     * @param Repository          $repository
      * @param TransformerAbstract $transformer
-     * @param null $resourceName
+     * @param null                $resourceName
      */
-    public function __construct( Repository $repository, TransformerAbstract $transformer, $resourceName = null )
+    public function __construct(Repository $repository, TransformerAbstract $transformer, $resourceName = null)
     {
         $this->repository = $repository;
 
@@ -51,7 +53,7 @@ trait ApiFoundation
      *
      * @return ApiFoundation
      */
-    protected function setRepository( Repository $repository )
+    protected function setRepository(Repository $repository)
     {
         $this->repository = $repository;
 
@@ -63,7 +65,7 @@ trait ApiFoundation
      *
      * @return ApiFoundation
      */
-    protected function setTransformer( DefaultTransformer $transformer )
+    protected function setTransformer(DefaultTransformer $transformer)
     {
         $this->transformer = $transformer;
 
@@ -75,7 +77,7 @@ trait ApiFoundation
      *
      * @return ApiFoundation
      */
-    protected function setResourceName( $resourceName )
+    protected function setResourceName($resourceName)
     {
         $this->resourceName = $resourceName;
 
@@ -93,9 +95,9 @@ trait ApiFoundation
 
             return $this->collection($rows);
         }
-        catch ( \Exception $exception )
+        catch (\Exception $exception)
         {
-            return new JsonResponse([ 'message' => $exception->getMessage() ], JsonResponse::HTTP_BAD_REQUEST);
+            return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
 
@@ -104,7 +106,7 @@ trait ApiFoundation
      *
      * @return array|JsonResponse
      */
-    public function filter( Request $request )
+    public function filter(Request $request)
     {
         try
         {
@@ -112,9 +114,9 @@ trait ApiFoundation
 
             return $this->collection($rows);
         }
-        catch ( \Exception $exception )
+        catch (\Exception $exception)
         {
-            return new JsonResponse([ 'message' => $exception->getMessage() ], JsonResponse::HTTP_BAD_REQUEST);
+            return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
 
@@ -123,7 +125,7 @@ trait ApiFoundation
      *
      * @return array|JsonResponse
      */
-    public function store( Request $request )
+    public function store(Request $request)
     {
         try
         {
@@ -131,9 +133,9 @@ trait ApiFoundation
 
             return $this->item($model);
         }
-        catch ( \Exception $exception )
+        catch (\Exception $exception)
         {
-            return new JsonResponse([ 'message' => $exception->getMessage() ], JsonResponse::HTTP_BAD_REQUEST);
+            return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
 
@@ -142,25 +144,25 @@ trait ApiFoundation
      *
      * @return array|JsonResponse
      */
-    public function show( $model )
+    public function show($model)
     {
         try
         {
             return $this->item($model);
         }
-        catch ( \Exception $exception )
+        catch (\Exception $exception)
         {
-            return new JsonResponse([ 'message' => $exception->getMessage() ], JsonResponse::HTTP_BAD_REQUEST);
+            return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
 
     /**
      * @param Request $request
-     * @param $model
+     * @param         $model
      *
      * @return array|JsonResponse
      */
-    public function update( Request $request, $model )
+    public function update(Request $request, $model)
     {
         try
         {
@@ -168,9 +170,9 @@ trait ApiFoundation
 
             return $this->item($model);
         }
-        catch ( \Exception $exception )
+        catch (\Exception $exception)
         {
-            return new JsonResponse([ 'message' => $exception->getMessage() ], JsonResponse::HTTP_BAD_REQUEST);
+            return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
 
@@ -179,7 +181,7 @@ trait ApiFoundation
      *
      * @return array|JsonResponse
      */
-    public function destroy( $model )
+    public function destroy($model)
     {
         try
         {
@@ -187,9 +189,9 @@ trait ApiFoundation
 
             return $this->item($model);
         }
-        catch ( \Exception $exception )
+        catch (\Exception $exception)
         {
-            return new JsonResponse([ 'message' => $exception->getMessage() ], JsonResponse::HTTP_BAD_REQUEST);
+            return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
 
@@ -198,7 +200,7 @@ trait ApiFoundation
      *
      * @return array|JsonResponse
      */
-    public function restore( $model )
+    public function restore($model)
     {
         try
         {
@@ -206,9 +208,9 @@ trait ApiFoundation
 
             return $this->item($model);
         }
-        catch ( \Exception $exception )
+        catch (\Exception $exception)
         {
-            return new JsonResponse([ 'message' => $exception->getMessage() ], JsonResponse::HTTP_BAD_REQUEST);
+            return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
 
@@ -217,8 +219,10 @@ trait ApiFoundation
      *
      * @return array
      */
-    protected function item( $model )
+    protected function item($model)
     {
+        $this->eagerLoadIncludesForItem($model);
+
         return fractal()
             ->item($model, $this->transformer, $this->resourceName)
             ->toArray();
@@ -229,13 +233,40 @@ trait ApiFoundation
      *
      * @return array
      */
-    protected function collection( $rows )
+    protected function collection($rows)
     {
+        $this->eagerLoadIncludesForCollection($rows);
+
         return fractal()
             ->collection($rows->getCollection(), $this->transformer, $this->resourceName)
             ->serializeWith(new JsonApiSerializer())
             ->paginateWith(new IlluminatePaginatorAdapter($rows))
-            ->parseIncludes(request('includes'))
+            ->parseIncludes(request('includes', []))
+            ->parseExcludes(request('excludes', []))
             ->toArray();
+    }
+
+    protected function parseIncludes()
+    {
+        return (new Manager)->parseIncludes(request()->get('includes'))->getRequestedIncludes();
+    }
+
+    /**
+     * @param $item
+     */
+    protected function eagerLoadIncludesForItem(&$item)
+    {
+        $item->load($this->parseIncludes());
+    }
+
+    /**
+     * @param $rows
+     */
+    protected function eagerLoadIncludesForCollection(&$rows)
+    {
+        $rows = $rows->each(function ($item)
+        {
+            $this->eagerLoadIncludesForItem($item);
+        });
     }
 }
