@@ -239,6 +239,9 @@ trait ApiFoundation
 
         return fractal()
             ->item($model, $this->transformer, $this->resourceName)
+            ->serializeWith(new JsonApiSerializer())
+            ->parseIncludes(request('includes', ''))
+            ->parseExcludes(request('excludes', ''))
             ->toArray();
     }
 
@@ -255,8 +258,8 @@ trait ApiFoundation
             ->collection($rows->getCollection(), $this->transformer, $this->resourceName)
             ->serializeWith(new JsonApiSerializer())
             ->paginateWith(new IlluminatePaginatorAdapter($rows))
-            ->parseIncludes(request('includes', []))
-            ->parseExcludes(request('excludes', []))
+            ->parseIncludes(request('includes', ''))
+            ->parseExcludes(request('excludes', ''))
             ->toArray();
     }
 
