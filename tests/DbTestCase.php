@@ -53,8 +53,8 @@ abstract class DbTestCase extends \Illuminate\Foundation\Testing\TestCase
     {
         parent::setUp();
 
-        $this->app[ 'config' ]->set('database.default', 'sqlite');
-        $this->app[ 'config' ]->set('database.connections.sqlite.database', ':memory:');
+        $this->app['config']->set('database.default', 'sqlite');
+        $this->app['config']->set('database.connections.sqlite.database', ':memory:');
 
         $this->migrate();
     }
@@ -64,17 +64,17 @@ abstract class DbTestCase extends \Illuminate\Foundation\Testing\TestCase
      *
      * @param string $path
      */
-    public function migrate( $path = __DIR__ . "/Resource/migrations" )
+    public function migrate($path = __DIR__ . "/Resource/migrations")
     {
         $fileSystem = new Filesystem;
         $classFinder = new ClassFinder;
 
-        foreach ( $fileSystem->files($path) as $file )
+        foreach ($fileSystem->files($path) as $file)
         {
             $fileSystem->requireOnce($file);
             $migrationClass = $classFinder->findClass($file);
 
-            ( new $migrationClass )->up();
+            (new $migrationClass)->up();
         }
     }
 }

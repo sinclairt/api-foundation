@@ -93,10 +93,12 @@ trait ApiFoundation
         {
             $rows = $this->repository->getAllPaginate(request('rows', 15), request('order_by'), request('direction', 'asc'), explode(',', request('columns', '*')), request('page_name', 'page'));
 
-            return $this->collection($rows);
+            return new JsonResponse($this->collection($rows));
         }
         catch (\Exception $exception)
         {
+            \Log::info($exception->getTraceAsString());
+
             return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
@@ -112,10 +114,12 @@ trait ApiFoundation
         {
             $rows = $this->repository->filterPaginated($request, $request->get('rows', 15), $request->get('order_by'), $request->get('direction', 'asc'), explode(',', $request->get('columns', '*')), $request->get('page_name', 'page'), $request->get('search'));
 
-            return $this->collection($rows);
+            return new JsonResponse($this->collection($rows));
         }
         catch (\Exception $exception)
         {
+            \Log::info($exception->getTraceAsString());
+
             return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
@@ -131,10 +135,12 @@ trait ApiFoundation
         {
             $model = $this->repository->add($request->all());
 
-            return $this->item($model);
+            return new JsonResponse($this->item($model), JsonResponse::HTTP_CREATED);
         }
         catch (\Exception $exception)
         {
+            \Log::info($exception->getTraceAsString());
+
             return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
@@ -148,10 +154,12 @@ trait ApiFoundation
     {
         try
         {
-            return $this->item($model);
+            return new JsonResponse($this->item($model));
         }
         catch (\Exception $exception)
         {
+            \Log::info($exception->getTraceAsString());
+
             return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
@@ -168,10 +176,12 @@ trait ApiFoundation
         {
             $model = $this->repository->update($request->all(), $model);
 
-            return $this->item($model);
+            return new JsonResponse($this->item($model));
         }
         catch (\Exception $exception)
         {
+            \Log::info($exception->getTraceAsString());
+
             return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
@@ -187,10 +197,12 @@ trait ApiFoundation
         {
             $this->repository->destroy($model);
 
-            return $this->item($model);
+            return new JsonResponse($this->item($model));
         }
         catch (\Exception $exception)
         {
+            \Log::info($exception->getTraceAsString());
+
             return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
@@ -206,10 +218,12 @@ trait ApiFoundation
         {
             $model = $this->repository->restore($model);
 
-            return $this->item($model);
+            return new JsonResponse($this->item($model));
         }
         catch (\Exception $exception)
         {
+            \Log::info($exception->getTraceAsString());
+
             return new JsonResponse(['message' => $exception->getMessage()], JsonResponse::HTTP_BAD_REQUEST);
         }
     }

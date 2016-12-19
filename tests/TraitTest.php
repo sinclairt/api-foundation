@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Routing\Router;
+
 require_once 'DbTestCase.php';
 
 /**
@@ -57,78 +59,84 @@ class TraitTest extends DbTestCase
     {
         $this->createDummies(20);
 
-        $data = $this->makeController()
-                     ->index();
+        Route::get('/', 'DummyController@index');
 
-        $this->assertTrue(is_array($data));
-
-        $this->assertArrayHasKey('data', $data);
-        $this->assertArrayHasKey('meta', $data);
-        $this->assertArrayHasKey('pagination', $data[ 'meta' ]);
-        $this->assertArrayHasKey('total', $data[ 'meta' ][ 'pagination' ]);
-        $this->assertArrayHasKey('count', $data[ 'meta' ][ 'pagination' ]);
-        $this->assertArrayHasKey('per_page', $data[ 'meta' ][ 'pagination' ]);
-        $this->assertArrayHasKey('current_page', $data[ 'meta' ][ 'pagination' ]);
-        $this->assertArrayHasKey('total_pages', $data[ 'meta' ][ 'pagination' ]);
-        $this->assertArrayHasKey('links', $data);
-        $this->assertArrayHasKey('self', $data[ 'links' ]);
-        $this->assertArrayHasKey('first', $data[ 'links' ]);
-        $this->assertArrayHasKey('last', $data[ 'links' ]);
-        $this->assertArrayHasKey('next', $data[ 'links' ]);
-
-        $this->assertEquals(15, sizeof($data[ 'data' ]));
-        $this->assertEquals(20, array_get($data, 'meta.pagination.total'));
-        $this->assertEquals(15, array_get($data, 'meta.pagination.count'));
-        $this->assertEquals(15, array_get($data, 'meta.pagination.per_page'));
-        $this->assertEquals(1, array_get($data, 'meta.pagination.current_page'));
-        $this->assertEquals(2, array_get($data, 'meta.pagination.total_pages'));
+        $this->getJson('/')->seeJsonStructure([
+            'data',
+            'meta'  => [
+                'pagination' => [
+                    'total',
+                    'count',
+                    'per_page',
+                    'current_page',
+                    'total_pages',
+                ],
+            ],
+            'links' => [
+                'self',
+                'first',
+                'last',
+                'next',
+            ],
+        ])->seeJson([
+            'meta' => [
+                'pagination' => [
+                    'total'        => 20,
+                    'count'        => 15,
+                    'per_page'     => 15,
+                    'current_page' => 1,
+                    'total_pages'  => 2,
+                ],
+            ],
+        ]);
     }
 
     public function test_i_get_failed_response_when_i_provide_invalid_parameters_for_the_index_method()
     {
-        request()->offsetSet('columns', [ 'foo' ]);
+        Route::get('/', 'DummyController@index');
 
-        $response = $this->makeController()
-                         ->index();
-
-        $this->assertInstanceOf(\Illuminate\Http\JsonResponse::class, $response);
+        $this->getJson('/?rows=foo,bar,baz')->assertResponseStatus(400);
     }
 
     public function test_i_can_get_the_second_page_of_results()
     {
+        Route::get('/', 'DummyController@index');
+
         $this->createDummies(20);
 
-        request()->offsetSet('page', 2);
-
-        $data = $this->makeController()
-                     ->index();
-
-        $this->assertTrue(is_array($data));
-
-        $this->assertArrayHasKey('data', $data);
-        $this->assertArrayHasKey('meta', $data);
-        $this->assertArrayHasKey('pagination', $data[ 'meta' ]);
-        $this->assertArrayHasKey('total', $data[ 'meta' ][ 'pagination' ]);
-        $this->assertArrayHasKey('count', $data[ 'meta' ][ 'pagination' ]);
-        $this->assertArrayHasKey('per_page', $data[ 'meta' ][ 'pagination' ]);
-        $this->assertArrayHasKey('current_page', $data[ 'meta' ][ 'pagination' ]);
-        $this->assertArrayHasKey('total_pages', $data[ 'meta' ][ 'pagination' ]);
-        $this->assertArrayHasKey('links', $data);
-        $this->assertArrayHasKey('self', $data[ 'links' ]);
-        $this->assertArrayHasKey('first', $data[ 'links' ]);
-        $this->assertArrayHasKey('last', $data[ 'links' ]);
-        $this->assertArrayHasKey('prev', $data[ 'links' ]);
-
-        $this->assertEquals(5, sizeof($data[ 'data' ]));
-        $this->assertEquals(20, array_get($data, 'meta.pagination.total'));
-        $this->assertEquals(5, array_get($data, 'meta.pagination.count'));
-        $this->assertEquals(15, array_get($data, 'meta.pagination.per_page'));
-        $this->assertEquals(2, array_get($data, 'meta.pagination.current_page'));
-        $this->assertEquals(2, array_get($data, 'meta.pagination.total_pages'));
+        $this->getJson('/?page=2')->seeJsonStructure([
+            'data',
+            'meta'  => [
+                'pagination' => [
+                    'total',
+                    'count',
+                    'per_page',
+                    'current_page',
+                    'total_pages',
+                ],
+            ],
+            'links' => [
+                'self',
+                'first',
+                'last',
+            ],
+        ])->seeJson([
+            'meta' => [
+                'pagination' => [
+                    'total'        => 20,
+                    'count'        => 5,
+                    'per_page'     => 15,
+                    'current_page' => 2,
+                    'total_pages'  => 2,
+                ],
+            ],
+        ]);
     }
 
     public function test_i_can_get_all_rows_of_data_paginated_with_filters()
     {
+        Route::post('/filter', 'DummyController@filter');
+
         $dummies = $this->createDummies(20);
 
         $names = $dummies->pluck('name')
@@ -138,175 +146,229 @@ class TraitTest extends DbTestCase
 
         $total = head(array_count_values($names));
 
-        $request = request();
+        $json = $this->postJson('/filter', ['name' => $name]);
 
-        $request->offsetSet('name', $name);
+        $json->seeJsonStructure([
+            'data',
+            'meta'  => [
+                'pagination' => [
+                    'total',
+                    'count',
+                    'per_page',
+                    'current_page',
+                    'total_pages',
+                ],
+            ],
+            'links' => [
+                'self',
+                'first',
+                'last',
+            ],
+        ])->seeJson([
+            'meta' => [
+                'pagination' => [
+                    'total'        => $total,
+                    'count'        => $total > 15 ? 15 : $total,
+                    'per_page'     => 15,
+                    'current_page' => 1,
+                    'total_pages'  => ceil($total / 15),
+                ],
+            ],
+        ]);
 
-        $data = $this->makeController()
-                     ->filter($request);
-
-        $this->assertTrue(is_array($data));
-
-        $this->assertArrayHasKey('data', $data);
-        $this->assertArrayHasKey('meta', $data);
-        $this->assertArrayHasKey('pagination', $data[ 'meta' ]);
-        $this->assertArrayHasKey('total', $data[ 'meta' ][ 'pagination' ]);
-        $this->assertArrayHasKey('count', $data[ 'meta' ][ 'pagination' ]);
-        $this->assertArrayHasKey('per_page', $data[ 'meta' ][ 'pagination' ]);
-        $this->assertArrayHasKey('current_page', $data[ 'meta' ][ 'pagination' ]);
-        $this->assertArrayHasKey('total_pages', $data[ 'meta' ][ 'pagination' ]);
-        $this->assertArrayHasKey('links', $data);
-        $this->assertArrayHasKey('self', $data[ 'links' ]);
-        $this->assertArrayHasKey('first', $data[ 'links' ]);
-        $this->assertArrayHasKey('last', $data[ 'links' ]);
-        if ( $total > 15 )
-            $this->assertArrayHasKey('next', $data[ 'links' ]);
-
-        $this->assertEquals($total > 15 ? 15 : $total, sizeof($data[ 'data' ]));
-        $this->assertEquals($total, array_get($data, 'meta.pagination.total'));
-        $this->assertEquals($total > 15 ? 15 : $total, array_get($data, 'meta.pagination.count'));
-        $this->assertEquals(15, array_get($data, 'meta.pagination.per_page'));
-        $this->assertEquals(1, array_get($data, 'meta.pagination.current_page'));
-        $this->assertEquals(ceil($total / 15), array_get($data, 'meta.pagination.total_pages'));
+        if ($total > 15)
+            $json->seeJsonStructure([
+                'links' => [
+                    'next',
+                ],
+            ]);
     }
 
     public function test_i_get_failed_response_when_i_provide_invalid_parameters_for_the_filter_method()
     {
-        request()->offsetSet('columns', [ 'foo' ]);
+        Route::post('/filter', 'DummyController@filter');
 
-        $response = $this->makeController()
-                         ->filter(request());
-
-        $this->assertInstanceOf(\Illuminate\Http\JsonResponse::class, $response);
+        $this->postJson('/filter', ['rows' => 'foo'])->assertResponseStatus(400);
     }
 
     public function test_i_can_create_a_new_model()
     {
-        $request = request();
+        Route::post('/', 'DummyController@store');
 
         $name = $this->faker->word;
-        $request->offsetSet('name', $name);
 
-        $data = $this->makeController()
-                     ->store($request);
-
-        $this->assertTrue(is_array($data));
-        $this->assertArrayHasKey('data', $data);
-        $this->assertArrayHasKey('id', $data[ 'data' ]);
-        $this->assertArrayHasKey('name', $data[ 'data' ]);
-        $this->assertArrayHasKey('created_at', $data[ 'data' ]);
-        $this->assertArrayHasKey('updated_at', $data[ 'data' ]);
-        $this->assertEquals($data[ 'data' ][ 'name' ], $name);
+        $this->postJson('/', [
+            'name' => $name,
+        ])->seeJson([
+            'name' => $name,
+        ])->seeJsonStructure([
+            'data' => [
+                'id',
+                'name',
+                'created_at',
+                'updated_at',
+            ],
+        ]);
     }
 
     public function test_i_get_a_failed_response_when_creating_a_model_incorrectly()
     {
-        $response = $this->makeController()
-                         ->store(request());
+        Route::post('/', 'DummyController@store');
 
-        $this->assertInstanceOf(\Illuminate\Http\JsonResponse::class, $response);
+        $this->postJson('/', [])->assertResponseStatus(400);
     }
 
     public function test_i_can_retrieve_a_model()
     {
+        app('router')->get('/dummy/{dummy}', function ($dummy)
+        {
+            try
+            {
+                $dummy = DummyModel::withTrashed()->find($dummy);
+
+                return call_user_func_array([
+                    app('DummyController'),
+                    'show',
+                ], [$dummy]);
+            }
+            catch (Exception $e)
+            {
+                dd($e->getMessage());
+            }
+        });
+
         $dummy = $this->createDummies(1)
                       ->first();
 
-        $data = $this->makeController()
-                     ->show($dummy);
-
-        $this->assertTrue(is_array($data));
-        $this->assertArrayHasKey('data', $data);
-        $this->assertArrayHasKey('id', $data[ 'data' ]);
-        $this->assertArrayHasKey('name', $data[ 'data' ]);
-        $this->assertArrayHasKey('created_at', $data[ 'data' ]);
-        $this->assertArrayHasKey('updated_at', $data[ 'data' ]);
-
-        $this->assertEquals($data[ 'data' ][ 'id' ], $dummy->id);
-        $this->assertEquals($data[ 'data' ][ 'name' ], $dummy->name);
-        $this->assertEquals($data[ 'data' ][ 'created_at' ], $dummy->created_at);
-        $this->assertEquals($data[ 'data' ][ 'updated_at' ], $dummy->updated_at);
+        $this->getJson('/dummy/' . $dummy->id)->seeJsonStructure([
+            'data' => [
+                'id',
+                'name',
+                'created_at',
+                'updated_at',
+            ],
+        ])->seeJson($dummy->toArray());
     }
 
     public function test_i_get_an_exception_when_supplying_a_object_that_does_not_implement_eloquent()
     {
-        $this->setExpectedException(TypeError::class);
+        Route::get('/dummy/{id}', 'DummyController@show');
 
-        $this->makeController()
-             ->show(new stdClass());
+        $this->getJson('/dummy/1')->assertResponseStatus(500);
     }
 
     public function test_i_can_update_a_model()
     {
+        // mocking route model binding
+        app('router')->put('/dummy/{dummy}', function ($dummy)
+        {
+            $model = DummyModel::withTrashed()->find($dummy);
+
+            try
+            {
+                return call_user_func_array([
+                    app('DummyController'),
+                    'update',
+                ], [
+                    request(),
+                    $model,
+                ]);
+            }
+            catch (Exception $e)
+            {
+                dd($e->getMessage());
+            }
+        });
+
         $dummy = $this->createDummies()
                       ->first();
 
         $name = $this->faker->word;
 
-        request([ 'name', $name ]);
-
-        $data = $this->makeController()
-                     ->update(request(), $dummy);
-
-        $this->assertTrue(is_array($data));
-        $this->assertArrayHasKey('data', $data);
-        $this->assertArrayHasKey('id', $data[ 'data' ]);
-        $this->assertArrayHasKey('name', $data[ 'data' ]);
-        $this->assertArrayHasKey('created_at', $data[ 'data' ]);
-        $this->assertArrayHasKey('updated_at', $data[ 'data' ]);
-
-        $this->assertEquals($data[ 'data' ][ 'id' ], $dummy->id);
-        $this->assertEquals($data[ 'data' ][ 'name' ], $dummy->name);
-        $this->assertEquals($data[ 'data' ][ 'created_at' ], $dummy->created_at);
-        $this->assertEquals($data[ 'data' ][ 'updated_at' ], $dummy->updated_at);
+        $this->putJson('/dummy/' . $dummy->id, [
+            'name' => $name,
+        ])->seeJson([
+            'name' => $name,
+        ])->seeJsonStructure([
+            'data' => [
+                'id',
+                'name',
+                'created_at',
+                'updated_at',
+            ],
+        ]);
     }
 
     public function test_i_can_destroy_a_model()
     {
+        // mocking route model binding
+        \Route::delete('/dummy/{dummy}', function ($dummy)
+        {
+            $model = DummyModel::withTrashed()->find($dummy);
+
+            try
+            {
+                return call_user_func_array([
+                    app('DummyController'),
+                    'destroy',
+                ], [$model,]);
+            }
+            catch (Exception $e)
+            {
+                dd($e->getMessage());
+            }
+        });
+
         $dummy = $this->createDummies()
                       ->first();
 
-        $data = $this->makeController()
-                     ->destroy($dummy);
-
-        $this->assertTrue(is_array($data));
-        $this->assertArrayHasKey('data', $data);
-        $this->assertArrayHasKey('id', $data[ 'data' ]);
-        $this->assertArrayHasKey('name', $data[ 'data' ]);
-        $this->assertArrayHasKey('created_at', $data[ 'data' ]);
-        $this->assertArrayHasKey('updated_at', $data[ 'data' ]);
-        $this->assertArrayHasKey('deleted_at', $data[ 'data' ]);
-
-        $this->assertEquals($data[ 'data' ][ 'id' ], $dummy->id);
-        $this->assertEquals($data[ 'data' ][ 'name' ], $dummy->name);
-        $this->assertEquals($data[ 'data' ][ 'created_at' ], $dummy->created_at);
-        $this->assertEquals($data[ 'data' ][ 'updated_at' ], $dummy->updated_at);
-        $this->assertEquals($data[ 'data' ][ 'deleted_at' ], $dummy->deleted_at);
+        $this->deleteJson('/dummy/' . $dummy->id)
+             ->seeJsonStructure([
+                 'data' => [
+                     'id',
+                     'name',
+                     'created_at',
+                     'updated_at',
+                     'deleted_at',
+                 ],
+             ]);
     }
 
     public function test_i_can_restore_a_model()
     {
+        // mocking route model binding
+        \Route::get('/dummy/{dummy}/restore', function ($dummy)
+        {
+            $model = DummyModel::withTrashed()->find($dummy);
+
+            try
+            {
+                return call_user_func_array([
+                    app('DummyController'),
+                    'restore',
+                ], [$model]);
+            }
+            catch (Exception $e)
+            {
+                dd($e->getMessage());
+            }
+        });
+
         $dummy = $this->createDummies()
                       ->first();
 
         $dummy->delete();
 
-        $data = $this->makeController()
-                     ->restore($dummy);
-
-        $this->assertTrue(is_array($data));
-        $this->assertArrayHasKey('data', $data);
-        $this->assertArrayHasKey('id', $data[ 'data' ]);
-        $this->assertArrayHasKey('name', $data[ 'data' ]);
-        $this->assertArrayHasKey('created_at', $data[ 'data' ]);
-        $this->assertArrayHasKey('updated_at', $data[ 'data' ]);
-        $this->assertArrayHasKey('deleted_at', $data[ 'data' ]);
-
-        $this->assertEquals($data[ 'data' ][ 'id' ], $dummy->id);
-        $this->assertEquals($data[ 'data' ][ 'name' ], $dummy->name);
-        $this->assertEquals($data[ 'data' ][ 'created_at' ], $dummy->created_at);
-        $this->assertEquals($data[ 'data' ][ 'updated_at' ], $dummy->updated_at);
-        $this->assertNull($data[ 'data' ][ 'deleted_at' ]);
+        $this->getJson('/dummy/' . $dummy->id . '/restore')
+             ->seeJsonStructure([
+                 'data' => [
+                     'id',
+                     'name',
+                     'created_at',
+                     'updated_at',
+                     'deleted_at',
+                 ],
+             ])->seeJson(['deleted_at' => null]);
     }
 
     /**
@@ -322,10 +384,10 @@ class TraitTest extends DbTestCase
      *
      * @return \Illuminate\Support\Collection
      */
-    private function createDummies( $count = 1 )
+    private function createDummies($count = 1)
     {
         $dummies = [];
-        for ( $i = 0; $i < $count; $i++ )
+        for ($i = 0; $i < $count; $i++)
             $dummies[] = DummyModel::create($this->getDummyData());
 
         return collect($dummies);
@@ -336,6 +398,6 @@ class TraitTest extends DbTestCase
      */
     private function getDummyData()
     {
-        return [ 'name' => $this->faker->word ];
+        return ['name' => $this->faker->word];
     }
 }
