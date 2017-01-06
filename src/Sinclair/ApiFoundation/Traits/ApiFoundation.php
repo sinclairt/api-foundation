@@ -277,7 +277,20 @@ trait ApiFoundation
     protected function eagerLoadIncludesForItem(&$item)
     {
         if ($item instanceof Model && !empty($includes = $this->parseIncludes()))
-            $item->load($includes);
+        {
+            foreach ($includes as $include)
+            {
+                // not all includes will a relation on the model we will ignore these, this is a time saver after all, not critical
+                try
+                {
+                    $item->load($include);
+                }
+                catch (\Exception $e)
+                {
+                    \Log::info($e->getMessage(), $e->getTrace());
+                }
+            }
+        }
     }
 
     /**
