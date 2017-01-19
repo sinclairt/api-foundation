@@ -31,11 +31,10 @@
   "repositories": [
     {
       "type": "composer",
-      "url": "http://satis.viewmychain.com"
+      "url": "https://satis.ominor.com"
     }
   ],
   "config": {
     "preferred-install": "dist",
-    "secure-http": false
   }
 }
