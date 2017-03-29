@@ -3,7 +3,7 @@
   "description": "A basis for your REST API",
   "type": "library",
   "require": {
-    "sinclair/repository": "1.*",
+    "sinclairt/repository": "1.*",
     "spatie/laravel-fractal": "^3.0"
   },
   "require-dev": {
@@ -28,12 +28,6 @@
   "scripts": {
     "phpunit": "./vendor/bin/phpunit;"
   },
-  "repositories": [
-    {
-      "type": "composer",
-      "url": "https://satis.ominor.com"
-    }
-  ],
   "config": {
     "preferred-install": "dist"
   }
