@@ -1,5 +1,5 @@
 {
-  "name": "sinclair/api-foundation",
+  "name": "sinclairt/api-foundation",
   "description": "A basis for your REST API",
   "type": "library",
   "require": {
