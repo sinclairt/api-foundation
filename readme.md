@@ -7,7 +7,7 @@ A simple trait to build RESTful controllers using Fractal.
 Register the service provider in `config/app.php` providers array:
 ``` Sinclair\ApiFoundation\Providers\ApiFoundationServiceProvider::class```
 
-###Usage
+### Usage
 Use the `\Sinclair\ApiFoundation\Traits\ApiFoundation` trait inside your API controllers to create RESTful controllers.
 
 This is written as a trait to prevent inheritance issues, so feel free to overwrite any of the methods.
