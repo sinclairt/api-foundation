@@ -1,13 +1,13 @@
-#API Foundation
+# API Foundation
 
 A simple trait to build RESTful controllers using Fractal. 
 
-###Installation
+### Installation
 
 Register the service provider in `config/app.php` providers array:
 ``` Sinclair\ApiFoundation\Providers\ApiFoundationServiceProvider::class```
 
-###Usage
+### Usage
 Use the `\Sinclair\ApiFoundation\Traits\ApiFoundation` trait inside your API controllers to create RESTful controllers.
 
 This is written as a trait to prevent inheritance issues, so feel free to overwrite any of the methods.
@@ -18,7 +18,7 @@ You will need to `__construct` the controller to inject a resource implementatio
 
 There are fluent setters for the transformer, resource name, and repository should you need them.
 
-#####Available Methods
+##### Available Methods
 * index _GET_ _paginated collection_
 * filter _POST_ _paginated collection_
 * store _POST_ _item_
@@ -27,7 +27,7 @@ There are fluent setters for the transformer, resource name, and repository shou
 * destroy _DELETE_ _item_
 * restore _GET_ _item_
 
-#####Using Laravel/Eloquent to take the load off!
+##### Using Laravel/Eloquent to take the load off!
  
 It is recommended to use the properties that Eloquent provides to reduce the code in the Transformers. 
 * Use the `$hidden`/`$visible` properties to control what is seen inside an array.
