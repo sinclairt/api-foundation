@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Routing\Router;
-
 require_once 'DbTestCase.php';
 
 /**
@@ -21,8 +19,6 @@ class TraitTest extends DbTestCase
     {
         parent::setUp();
 
-        $this->migrate(__DIR__ . '/migrations');
-
         $this->migrate(__DIR__ . '/../vendor/laravel/laravel/database/migrations');
 
         $this->faker = Faker\Factory::create();
@@ -30,14 +26,14 @@ class TraitTest extends DbTestCase
 
     public function test_i_get_an_exception_when_class_does_not_have_repository_injected()
     {
-        $this->setExpectedException(TypeError::class);
+        $this->expectException(TypeError::class);
 
         new DummyController();
     }
 
     public function test_i_get_an_exception_when_class_does_not_have_transformer_injected()
     {
-        $this->setExpectedException(TypeError::class);
+        $this->expectException(TypeError::class);
 
         new DummyController(new DummyRepository(new DummyModel()));
     }
@@ -61,7 +57,9 @@ class TraitTest extends DbTestCase
 
         Route::get('/', 'DummyController@index');
 
-        $this->getJson('/')->seeJsonStructure([
+        $this->getJson('/');
+
+        $this->seeJsonStructure([
             'data',
             'meta'  => [
                 'pagination' => [
@@ -78,7 +76,9 @@ class TraitTest extends DbTestCase
                 'last',
                 'next',
             ],
-        ])->seeJson([
+        ]);
+
+        $this->seeJson([
             'meta' => [
                 'pagination' => [
                     'total'        => 20,
@@ -176,12 +176,13 @@ class TraitTest extends DbTestCase
             ],
         ]);
 
-        if ($total > 15)
+        if ($total > 15) {
             $json->seeJsonStructure([
                 'links' => [
                     'next',
                 ],
             ]);
+        }
     }
 
     public function test_i_get_failed_response_when_i_provide_invalid_parameters_for_the_filter_method()
@@ -204,9 +205,11 @@ class TraitTest extends DbTestCase
         ])->seeJsonStructure([
             'data' => [
                 'id',
-                'name',
-                'created_at',
-                'updated_at',
+                'attributes' => [
+                    'name',
+                    'created_at',
+                    'updated_at',
+                ],
             ],
         ]);
     }
@@ -220,19 +223,15 @@ class TraitTest extends DbTestCase
 
     public function test_i_can_retrieve_a_model()
     {
-        app('router')->get('/dummy/{dummy}', function ($dummy)
-        {
-            try
-            {
+        app('router')->get('/dummy/{dummy}', function ($dummy) {
+            try {
                 $dummy = DummyModel::withTrashed()->find($dummy);
 
                 return call_user_func_array([
                     app('DummyController'),
                     'show',
                 ], [$dummy]);
-            }
-            catch (Exception $e)
-            {
+            } catch (Exception $e) {
                 dd($e->getMessage());
             }
         });
@@ -243,11 +242,20 @@ class TraitTest extends DbTestCase
         $this->getJson('/dummy/' . $dummy->id)->seeJsonStructure([
             'data' => [
                 'id',
-                'name',
-                'created_at',
-                'updated_at',
+                'attributes' => [
+                    'name',
+                    'created_at',
+                    'updated_at',
+                ],
             ],
-        ])->seeJson($dummy->toArray());
+        ]);
+
+        $this->seeJson([
+            'id'         => (string)$dummy->id,
+            'name'       => $dummy->name,
+            'created_at' => $dummy->created_at->toDateTimeString(),
+            'updated_at' => $dummy->updated_at->toDateTimeString(),
+        ]);
     }
 
     public function test_i_get_an_exception_when_supplying_a_object_that_does_not_implement_eloquent()
@@ -260,12 +268,10 @@ class TraitTest extends DbTestCase
     public function test_i_can_update_a_model()
     {
         // mocking route model binding
-        app('router')->put('/dummy/{dummy}', function ($dummy)
-        {
+        app('router')->put('/dummy/{dummy}', function ($dummy) {
             $model = DummyModel::withTrashed()->find($dummy);
 
-            try
-            {
+            try {
                 return call_user_func_array([
                     app('DummyController'),
                     'update',
@@ -273,9 +279,7 @@ class TraitTest extends DbTestCase
                     request(),
                     $model,
                 ]);
-            }
-            catch (Exception $e)
-            {
+            } catch (Exception $e) {
                 dd($e->getMessage());
             }
         });
@@ -292,9 +296,11 @@ class TraitTest extends DbTestCase
         ])->seeJsonStructure([
             'data' => [
                 'id',
-                'name',
-                'created_at',
-                'updated_at',
+                'attributes' => [
+                    'name',
+                    'created_at',
+                    'updated_at',
+                ],
             ],
         ]);
     }
@@ -302,19 +308,15 @@ class TraitTest extends DbTestCase
     public function test_i_can_destroy_a_model()
     {
         // mocking route model binding
-        \Route::delete('/dummy/{dummy}', function ($dummy)
-        {
+        \Route::delete('/dummy/{dummy}', function ($dummy) {
             $model = DummyModel::withTrashed()->find($dummy);
 
-            try
-            {
+            try {
                 return call_user_func_array([
                     app('DummyController'),
                     'destroy',
                 ], [$model,]);
-            }
-            catch (Exception $e)
-            {
+            } catch (Exception $e) {
                 dd($e->getMessage());
             }
         });
@@ -326,10 +328,12 @@ class TraitTest extends DbTestCase
              ->seeJsonStructure([
                  'data' => [
                      'id',
-                     'name',
-                     'created_at',
-                     'updated_at',
-                     'deleted_at',
+                     'attributes' => [
+                         'name',
+                         'created_at',
+                         'updated_at',
+                         'deleted_at',
+                     ],
                  ],
              ]);
     }
@@ -337,19 +341,15 @@ class TraitTest extends DbTestCase
     public function test_i_can_restore_a_model()
     {
         // mocking route model binding
-        \Route::get('/dummy/{dummy}/restore', function ($dummy)
-        {
+        \Route::get('/dummy/{dummy}/restore', function ($dummy) {
             $model = DummyModel::withTrashed()->find($dummy);
 
-            try
-            {
+            try {
                 return call_user_func_array([
                     app('DummyController'),
                     'restore',
                 ], [$model]);
-            }
-            catch (Exception $e)
-            {
+            } catch (Exception $e) {
                 dd($e->getMessage());
             }
         });
@@ -363,10 +363,12 @@ class TraitTest extends DbTestCase
              ->seeJsonStructure([
                  'data' => [
                      'id',
-                     'name',
-                     'created_at',
-                     'updated_at',
-                     'deleted_at',
+                     'attributes' => [
+                         'name',
+                         'created_at',
+                         'updated_at',
+                         'deleted_at',
+                     ],
                  ],
              ])->seeJson(['deleted_at' => null]);
     }
@@ -387,8 +389,9 @@ class TraitTest extends DbTestCase
     private function createDummies($count = 1)
     {
         $dummies = [];
-        for ($i = 0; $i < $count; $i++)
+        for ($i = 0; $i < $count; $i++) {
             $dummies[] = DummyModel::create($this->getDummyData());
+        }
 
         return collect($dummies);
     }

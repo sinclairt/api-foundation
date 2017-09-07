@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Filesystem\ClassFinder;
 use Illuminate\Filesystem\Filesystem;
 
 require_once __DIR__ . '/../src/Sinclair/ApiFoundation/Providers/ApiFoundationServiceProvider.php';
@@ -8,7 +7,7 @@ require_once __DIR__ . '/../src/Sinclair/ApiFoundation/Providers/ApiFoundationSe
 /**
  * Class DbTestCase
  */
-abstract class DbTestCase extends \Illuminate\Foundation\Testing\TestCase
+abstract class DbTestCase extends Laravel\BrowserKitTesting\TestCase
 {
     /**
      * @var mixed
@@ -67,14 +66,43 @@ abstract class DbTestCase extends \Illuminate\Foundation\Testing\TestCase
     public function migrate($path = __DIR__ . "/Resource/migrations")
     {
         $fileSystem = new Filesystem;
-        $classFinder = new ClassFinder;
 
-        foreach ($fileSystem->files($path) as $file)
-        {
+        foreach ($fileSystem->files($path) as $file) {
             $fileSystem->requireOnce($file);
-            $migrationClass = $classFinder->findClass($file);
+            $migrationClass = $this->findClass($file);
 
             (new $migrationClass)->up();
         }
+    }
+
+    protected function findClass($file)
+    {
+        $fp    = fopen($file, 'r');
+        $class = $buffer = '';
+        $i     = 0;
+        while ( ! $class) {
+            if (feof($fp)) {
+                break;
+            }
+
+            $buffer .= fread($fp, 512);
+            $tokens = token_get_all($buffer);
+
+            if (strpos($buffer, '{') === false) {
+                continue;
+            }
+
+            for (; $i < count($tokens); $i++) {
+                if ($tokens[$i][0] === T_CLASS) {
+                    for ($j = $i + 1; $j < count($tokens); $j++) {
+                        if ($tokens[$j] === '{') {
+                            $class = $tokens[$i + 2][1];
+                        }
+                    }
+                }
+            }
+        }
+
+        return $class;
     }
 }
